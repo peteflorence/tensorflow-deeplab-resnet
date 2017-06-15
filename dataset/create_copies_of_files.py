@@ -14,5 +14,5 @@ with open(file_list) as f:
     	print i
     	i = i.split()
     	os.system("cp " + i[0] + " " + copy_dir+"/"+str(counter).zfill(8)+"_rgb.png")
-    	os.system("cp " + i[0] + " " + copy_dir+"/"+str(counter).zfill(8)+"_labels.png")
+    	os.system("cp " + i[1] + " " + copy_dir+"/"+str(counter).zfill(8)+"_labels.png")
     	counter+=1

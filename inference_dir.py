@@ -109,11 +109,14 @@ def main():
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
+    with open(args.data_list) as f:
+        content = f.readlines()
 
-    for i in range(578):
-	# Prepare image.
-        print("outputting "+str(i))
-    	img = tf.image.decode_png(tf.read_file("/home/corl2017/tensorflow-deeplab-resnet/dataset/train/"+str(i).zfill(8)+"_rgb.png"), channels=3)
+    content = [x.strip() for x in content]
+    
+    for index, value in enumerate(content):
+        print("outputting "+str(index))
+    	img = tf.image.decode_png(tf.read_file(value.split()[0]), channels=3)
     	# Convert RGB to BGR.
     	img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=img)
     	img = tf.cast(tf.concat(axis=2, values=[img_b, img_g, img_r]), dtype=tf.float32)
@@ -131,7 +134,7 @@ def main():
     	im = Image.fromarray(msk[0])
     	if not os.path.exists(args.save_dir):
 		os.makedirs(args.save_dir)
-    	im.save(args.save_dir +str(i).zfill(8) +'_pred' + str(i) + '.png')
+    	im.save(args.save_dir +str(index).zfill(8) +'_pred.png')
 
 if __name__ == '__main__':
     main()

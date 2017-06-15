@@ -22,10 +22,10 @@ IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 NUM_CLASSES = 21
 SAVE_DIR = './output/'
 DATA_DIR = '/'
-DATA_LIST_PATH = '/home/corl2017/tensorflow-deeplab-resnet/dataset/train.txt'
+DATA_LIST_PATH = './dataset/test.txt'
 DATA_DIRECTORY = ''
 IGNORE_LABEL = 255
-RESTORE_FROM = '/home/corl2017/tensorflow-deeplab-resnet/snapshots_finetune/model.ckpt-19900'
+RESTORE_FROM = './snapshots_finetune/model.ckpt-19900'
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -108,6 +108,7 @@ def main():
 
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+
 
     for i in range(578):
 	# Prepare image.

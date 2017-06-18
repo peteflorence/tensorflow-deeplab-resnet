@@ -18,14 +18,17 @@ import numpy as np
 
 from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, prepare_label
 
+train_set = "drill_1_train_scenes"
+test_set = "drill_11_test_scenes"
+
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-NUM_CLASSES = 21
-SAVE_DIR = './output/'
+NUM_CLASSES = 8
+SAVE_DIR = './output_' + train_set + '/'
 DATA_DIR = '/'
-DATA_LIST_PATH = './dataset/test.txt'
+DATA_LIST_PATH = '/home/corl2017/spartan/src/CorlDev/experiments/' + test_set + '.txt.imglist.txt'
 DATA_DIRECTORY = ''
 IGNORE_LABEL = 255
-RESTORE_FROM = './snapshots_finetune/model.ckpt-19900'
+RESTORE_FROM = './snapshots_' + train_set + '/model.ckpt-20000'
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.

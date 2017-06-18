@@ -20,7 +20,7 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, prepa
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
     
-NUM_CLASSES = 21
+NUM_CLASSES = 8
 SAVE_DIR = './output/'
 
 def get_arguments():

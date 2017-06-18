@@ -21,16 +21,16 @@ from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, inv_p
 
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
-BATCH_SIZE = 10
+BATCH_SIZE = 6
 DATA_DIRECTORY = '/'
 DATA_LIST_PATH = './dataset/train.txt'
 IGNORE_LABEL = 255
 INPUT_SIZE = '480,360'
 LEARNING_RATE = 1e-4
-NUM_CLASSES = 7
+NUM_CLASSES = 8
 NUM_STEPS = 20000
 RANDOM_SEED = 1234
-RESTORE_FROM = './models/deeplab_resnet.ckpt'
+RESTORE_FROM = './models/drill-trainedonly/model.ckpt-20000'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 100
 SNAPSHOT_DIR = './snapshots_finetune/'

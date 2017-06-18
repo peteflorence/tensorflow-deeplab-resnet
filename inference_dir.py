@@ -18,17 +18,7 @@ import numpy as np
 
 from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, prepare_label
 
-train_set = "drill_1_train_scenes"
-test_set = "drill_11_test_scenes"
-
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-NUM_CLASSES = 8
-SAVE_DIR = './output_' + train_set + '/'
-DATA_DIR = '/'
-DATA_LIST_PATH = '/home/corl2017/spartan/src/CorlDev/experiments/' + test_set + '.txt.imglist.txt'
-DATA_DIRECTORY = ''
-IGNORE_LABEL = 255
-RESTORE_FROM = './snapshots_' + train_set + '/model.ckpt-20000'
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -37,6 +27,21 @@ def get_arguments():
       A list of parsed arguments.
     """
     parser = argparse.ArgumentParser(description="DeepLabLFOV Network Inference.")
+    parser.add_argument("--train_set", type=str, default="drill",
+                        help="Number of classes to predict (including background).")
+    args = parser.parse_args()
+    train_set = args.train_set
+
+    test_set = "drill_11_test_scenes"
+
+    NUM_CLASSES = 8
+    SAVE_DIR = './output_all_drill_networks/'
+    DATA_DIR = '/'
+    DATA_LIST_PATH = '/home/peteflo/spartan/src/CorlDev/experiments/' + test_set + '.txt.imglist.txt'
+    DATA_DIRECTORY = ''
+    IGNORE_LABEL = 255
+    RESTORE_FROM = './snapshots_' + train_set + '/model.ckpt-20000'
+   
     parser.add_argument("--num-classes", type=int, default=NUM_CLASSES,
                         help="Number of classes to predict (including background).")
     parser.add_argument("--save-dir", type=str, default=SAVE_DIR,
@@ -137,7 +142,7 @@ def main():
     	im = Image.fromarray(msk[0])
     	if not os.path.exists(args.save_dir):
 		os.makedirs(args.save_dir)
-    	im.save(args.save_dir +str(index).zfill(8) +'_pred.png')
+    	im.save(args.save_dir +str(index).zfill(8) +'_pred_'+args.train_set+'.png')
 
 if __name__ == '__main__':
     main()

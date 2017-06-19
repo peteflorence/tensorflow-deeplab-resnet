@@ -32,12 +32,12 @@ def get_arguments():
     args = parser.parse_args()
     train_set = args.train_set
 
-    test_set = "drill_11_test_scenes"
+    #test_set = "drill_11_test_scenes"
 
     NUM_CLASSES = 8
-    SAVE_DIR = './output_all_drill_networks/'
+    SAVE_DIR = './TEST_all_sixobject_networks_single_test_scene/'
     DATA_DIR = '/'
-    DATA_LIST_PATH = '/home/peteflo/spartan/src/CorlDev/experiments/' + test_set + '.txt.imglist.txt'
+    DATA_LIST_PATH = '/home/peteflo/spartan/src/CorlDev/experiments/sixobjects_single_test_scenes.txt.imglist.txtdownsampled10.txt'
     DATA_DIRECTORY = ''
     IGNORE_LABEL = 255
     RESTORE_FROM = './snapshots_' + train_set + '/model.ckpt-20000'
@@ -137,11 +137,13 @@ def main():
     	pred = tf.expand_dims(raw_output_up, dim=3)
     	# Perform inference.
     	preds = sess.run(pred)
+        im_preds = Image.fromarray(np.uint8(preds[0, :, :, 0]))
 
     	msk = decode_labels(preds, num_classes=args.num_classes)
     	im = Image.fromarray(msk[0])
     	if not os.path.exists(args.save_dir):
-		os.makedirs(args.save_dir)
+            os.makedirs(args.save_dir)
+        im_preds.save(args.save_dir +str(index).zfill(8) +'_predlabels_'+args.train_set+'.png')
     	im.save(args.save_dir +str(index).zfill(8) +'_pred_'+args.train_set+'.png')
 
 if __name__ == '__main__':

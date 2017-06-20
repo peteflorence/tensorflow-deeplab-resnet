@@ -72,13 +72,13 @@ def performCRF(processed_probabilities, image):
     
     print(processed_probabilities.shape)
     print(image.shape)
-    processed_probabilities = processed_probabilities[0:2, :, :]
+    #processed_probabilities = processed_probabilities[0:2, :, :]
     unary = softmax_to_unary(processed_probabilities)
 
     # The inputs should be C-continious -- we are using Cython wrapper
     unary = np.ascontiguousarray(unary)
 
-    d = dcrf.DenseCRF(image.shape[0] * image.shape[1], 2)
+    d = dcrf.DenseCRF(image.shape[0] * image.shape[1], 8)
 
     d.setUnaryEnergy(unary)
 
@@ -102,6 +102,8 @@ def performCRF(processed_probabilities, image):
     Q = d.inference(5)
 
     res = np.argmax(Q, axis=0).reshape((image.shape[0], image.shape[1]))
+
+    return res
 
     cmap = plt.get_cmap('bwr')
 
@@ -214,16 +216,24 @@ def main():
         processed_probabilities = softmax.transpose((2, 0, 1))
         print(processed_probabilities.shape)
         print(type(processed_probabilities))
-        performCRF(processed_probabilities, raw_img)
+        crf_processed = performCRF(processed_probabilities, raw_img)
 
         im_preds = Image.fromarray(np.uint8(preds[0, :, :, 0]))
 
+        print("preds shape", preds.shape)
     	msk = decode_labels(preds, num_classes=args.num_classes)
     	im = Image.fromarray(msk[0])
+
+        print("crf_processed shape", crf_processed.shape)
+        crf_processed = crf_processed.reshape(1, crf_processed.shape[0], crf_processed.shape[1], 1)
+        msk_crf = decode_labels(crf_processed, num_classes=args.num_classes)
+        im_crf = Image.fromarray(msk_crf[0])
+
     	if not os.path.exists(args.save_dir):
             os.makedirs(args.save_dir)
-        im_preds.save(args.save_dir +str(index).zfill(8) +'_predlabels_'+args.train_set+'.png')
+        #im_preds.save(args.save_dir +str(index).zfill(8) +'_predlabels_'+args.train_set+'.png')
     	im.save(args.save_dir +str(index).zfill(8) +'_pred_'+args.train_set+'.png')
+        im_crf.save(args.save_dir +str(index).zfill(8) +'_predcrf_'+args.train_set+'.png')
 
 if __name__ == '__main__':
     main()

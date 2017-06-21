@@ -10,11 +10,11 @@ train_list = []
 # train_list.append("sixobjects_single_test_scenes")
 
 train_list.append("sixobjects_mixed_train_36_scenes_30_00hz")
-train_list.append("sixobjects_mixed_train_36_scenes_03_00hz")
-train_list.append("sixobjects_mixed_train_36_scenes_00_30hz")
-train_list.append("sixobjects_mixed_train_36_scenes_00_03hz")
+#train_list.append("sixobjects_mixed_train_36_scenes_03_00hz")
+#train_list.append("sixobjects_mixed_train_36_scenes_00_30hz")
+#train_list.append("sixobjects_mixed_train_36_scenes_00_03hz")
 
 for i in train_list:
-	os.system("python train.py --not-restore-last --data-list " + "/home/corl2017/spartan/src/CorlDev/experiments/"+i+".txt.imglist.txt --snapshot-dir ./snapshots_hz_"+i)
+	os.system("python train.py --not-restore-last --data-list ./"+i+".txt.imglist.txt --snapshot-dir ./snapshots_hz_"+i)
 
 

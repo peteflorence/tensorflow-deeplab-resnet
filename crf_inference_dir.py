@@ -18,6 +18,15 @@ import numpy as np
 
 from deeplab_resnet import DeepLabResNetModel, ImageReader, decode_labels, prepare_label
 
+from scipy import misc
+from matplotlib import pyplot as plt
+path = "/home/peteflo/tensorflow-deeplab-resnet/crf/pydensecrf/install/lib/python2.7/site-packages/"
+sys.path.append(path)
+import pydensecrf.densecrf as dcrf
+from pydensecrf.utils import compute_unary, create_pairwise_bilateral, \
+    create_pairwise_gaussian, softmax_to_unary
+
+
 IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
 
 def get_arguments():
@@ -35,9 +44,9 @@ def get_arguments():
     #test_set = "drill_11_test_scenes"
 
     NUM_CLASSES = 8
-    SAVE_DIR = './TEST_all_sixobject_networks_single_test_scene/'
+    SAVE_DIR = './testing_softmax_output/'
     DATA_DIR = '/'
-    DATA_LIST_PATH = '/home/peteflo/spartan/src/CorlDev/experiments/sixobjects_single_test_scenes.txt.imglist.txtdownsampled10.txt'
+    DATA_LIST_PATH = '/home/peteflo/spartan/src/CorlDev/experiments/sixobjects_multi_test_scenes.txt.imglist.txtdownsampled10.txt'
     DATA_DIRECTORY = ''
     IGNORE_LABEL = 255
     RESTORE_FROM = './snapshots_' + train_set + '/model.ckpt-20000'
@@ -55,6 +64,56 @@ def get_arguments():
     parser.add_argument("--restore-from", type=str, default=RESTORE_FROM,
                         help="Where restore model parameters from.")
     return parser.parse_args()
+
+
+def performCRF(processed_probabilities, image):
+    # The input should be the negative of the logarithm of probability values
+    # Look up the definition of the softmax_to_unary for more information
+    
+    print(processed_probabilities.shape)
+    print(image.shape)
+    #processed_probabilities = processed_probabilities[0:2, :, :]
+    unary = softmax_to_unary(processed_probabilities)
+
+    # The inputs should be C-continious -- we are using Cython wrapper
+    unary = np.ascontiguousarray(unary)
+
+    d = dcrf.DenseCRF(image.shape[0] * image.shape[1], 8)
+
+    d.setUnaryEnergy(unary)
+
+    # This potential penalizes small pieces of segmentation that are
+    # spatially isolated -- enforces more spatially consistent segmentations
+    feats = create_pairwise_gaussian(sdims=(10, 10), shape=image.shape[:2])
+
+    d.addPairwiseEnergy(feats, compat=3,
+                        kernel=dcrf.DIAG_KERNEL,
+                        normalization=dcrf.NORMALIZE_SYMMETRIC)
+
+    # This creates the color-dependent features --
+    # because the segmentation that we get from CNN are too coarse
+    # and we can use local color features to refine them
+    feats = create_pairwise_bilateral(sdims=(50, 50), schan=(20, 20, 20),
+                                       img=image, chdim=2)
+
+    d.addPairwiseEnergy(feats, compat=10,
+                         kernel=dcrf.DIAG_KERNEL,
+                         normalization=dcrf.NORMALIZE_SYMMETRIC)
+    Q = d.inference(5)
+
+    res = np.argmax(Q, axis=0).reshape((image.shape[0], image.shape[1]))
+
+    return res
+
+    cmap = plt.get_cmap('bwr')
+
+    f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+    ax1.imshow(res, vmax=1.5, vmin=-0.4, cmap=cmap)
+    ax1.set_title('Segmentation with CRF post-processing')
+    #probability_graph = ax2.imshow(np.dstack((train_annotation,)*3)*100)
+    probability_graph = ax2.imshow(image)
+    ax2.set_title('Raw image')
+    plt.show()
 
 def load(saver, sess, ckpt_path):
     '''Load trained weights.
@@ -97,8 +156,9 @@ def main():
     # Predictions.
     raw_output = net.layers['fc1_voc12']
     raw_output = tf.image.resize_bilinear(raw_output, tf.shape(image_batch)[1:3,])
-    raw_output = tf.argmax(raw_output, dimension=3)
-    pred = tf.expand_dims(raw_output, dim=3) # Create 4-d tensor.
+    #raw_output = tf.argmax(raw_output, dimension=3)
+    #pred = tf.expand_dims(raw_output, dim=3) # Create 4-d tensor.
+    pred = raw_output
 
     # Set up TF session and initialize variables.
     config = tf.ConfigProto()
@@ -121,10 +181,14 @@ def main():
         content = f.readlines()
 
     content = [x.strip() for x in content]
+
+
     
     for index, value in enumerate(content):
         print("outputting "+str(index))
     	img = tf.image.decode_png(tf.read_file(value.split()[0]), channels=3)
+        raw_img = misc.imread(value.split()[0])
+        print(type(raw_img))
     	# Convert RGB to BGR.
     	img_r, img_g, img_b = tf.split(axis=2, num_or_size_splits=3, value=img)
     	img = tf.cast(tf.concat(axis=2, values=[img_b, img_g, img_r]), dtype=tf.float32)
@@ -132,19 +196,44 @@ def main():
     	img -= IMG_MEAN 
     	# Predictions.
     	raw_output = net.layers['fc1_voc12']
+
     	raw_output_up = tf.image.resize_bilinear(raw_output, tf.shape(img)[0:2,])
-    	raw_output_up = tf.argmax(raw_output_up, dimension=3)
-    	pred = tf.expand_dims(raw_output_up, dim=3)
+    	#pred = raw_output_up
+        probabilities = tf.nn.softmax(raw_output_up)
+        pred = tf.argmax(raw_output_up, dimension=3)
+    	pred = tf.expand_dims(pred, dim=3)
     	# Perform inference.
-    	preds = sess.run(pred)
+    	preds, probs = sess.run([pred, probabilities])
+        print(preds.shape)
+        print(probs.shape)
+        print("probs")
+        print(probs)
+        softmax = probs[0, :, :, :]
+        print("softmax")
+        print(softmax)
+        print(softmax.shape)
+        print(type(softmax))
+        processed_probabilities = softmax.transpose((2, 0, 1))
+        print(processed_probabilities.shape)
+        print(type(processed_probabilities))
+        crf_processed = performCRF(processed_probabilities, raw_img)
+
         im_preds = Image.fromarray(np.uint8(preds[0, :, :, 0]))
 
+        print("preds shape", preds.shape)
     	msk = decode_labels(preds, num_classes=args.num_classes)
     	im = Image.fromarray(msk[0])
+
+        print("crf_processed shape", crf_processed.shape)
+        crf_processed = crf_processed.reshape(1, crf_processed.shape[0], crf_processed.shape[1], 1)
+        msk_crf = decode_labels(crf_processed, num_classes=args.num_classes)
+        im_crf = Image.fromarray(msk_crf[0])
+
     	if not os.path.exists(args.save_dir):
             os.makedirs(args.save_dir)
-        im_preds.save(args.save_dir +str(index).zfill(8) +'_predlabels_'+args.train_set+'.png')
+        #im_preds.save(args.save_dir +str(index).zfill(8) +'_predlabels_'+args.train_set+'.png')
     	im.save(args.save_dir +str(index).zfill(8) +'_pred_'+args.train_set+'.png')
+        im_crf.save(args.save_dir +str(index).zfill(8) +'_predcrf_'+args.train_set+'.png')
 
 if __name__ == '__main__':
     main()

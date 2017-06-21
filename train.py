@@ -33,7 +33,7 @@ NUM_CLASSES = 12
 NUM_STEPS = 20001
 POWER = 0.9
 RANDOM_SEED = 1234
-RESTORE_FROM = './models/deeplab_resnet.ckpt'
+RESTORE_FROM = './snapshots_hz_sixobjects_mixed_train_36_scenes_30_00hz/model.ckpt-7000'
 SAVE_NUM_IMAGES = 2
 SAVE_PRED_EVERY = 1000
 SNAPSHOT_DIR = './snapshots/'
@@ -235,6 +235,8 @@ def main():
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
+    target = open("record"+".txt", 'w')
+        
     # Iterate over training steps.
     for step in range(args.num_steps):
         start_time = time.time()
@@ -243,11 +245,14 @@ def main():
         if step % args.save_pred_every == 0:
             loss_value, images, labels, preds, summary, _ = sess.run([reduced_loss, image_batch, label_batch, pred, total_summary, train_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary, step)
-            save(saver, sess, args.snapshot_dir, step)
+            save(saver, sess, args.snapshot_dir, step+27000)
         else:
             loss_value, _ = sess.run([reduced_loss, train_op], feed_dict=feed_dict)
         duration = time.time() - start_time
         print('step {:d} \t loss = {:.3f}, ({:.3f} sec/step)'.format(step, loss_value, duration))
+        target.write(str(step) + " " + str(loss_value) + " " + str(duration))
+        target.write("\n")
+    target.close()
     coord.request_stop()
     coord.join(threads)
     
